@@ -1,43 +1,48 @@
 import json
 import logging
-from anthropic import Anthropic
-from ..database.queries import run_raw_sql
+
 from sqlalchemy.orm import Session
+
+from ..ai.foundry import create_foundry_client
+from ..database.queries import run_raw_sql
 
 logger = logging.getLogger(__name__)
 
 SQL_QUERY_TOOL = {
-    "name": "query_project_database",
-    "description": (
-        "Execute a SQL SELECT query against the project portfolio database. "
-        "Available tables: projects, tasks, resources, assignments, deviations. "
-        "Key columns on tasks: project_id, task_uid, name, start, finish, "
-        "baseline_start, baseline_finish, actual_start, actual_finish, "
-        "duration_hours, baseline_duration_hours, percent_complete, "
-        "cost, baseline_cost, actual_cost, bcws, bcwp, acwp, "
-        "critical (boolean), milestone (boolean), summary (boolean), resource_names. "
-        "Key columns on projects: id, name, cost, baseline_cost, actual_cost, "
-        "start, finish, baseline_start, baseline_finish, bcws, bcwp, acwp. "
-        "Key columns on deviations: project_id, task_uid, deviation_type, severity, "
-        "metric_name, variance, variance_percent, description. "
-        "deviation_type values: schedule_slippage, cost_overrun, milestone_slippage, "
-        "duration_overrun, cpi_critical, spi_critical. "
-        "severity values: warning, critical. "
-        "Only SELECT queries are allowed."
-    ),
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "sql": {
-                "type": "string",
-                "description": "A SQLite SELECT query to execute",
+    "type": "function",
+    "function": {
+        "name": "query_project_database",
+        "description": (
+            "Execute a SQL SELECT query against the project portfolio database. "
+            "Available tables: projects, tasks, resources, assignments, deviations. "
+            "Key columns on tasks: project_id, task_uid, name, start, finish, "
+            "baseline_start, baseline_finish, actual_start, actual_finish, "
+            "duration_hours, baseline_duration_hours, percent_complete, "
+            "cost, baseline_cost, actual_cost, bcws, bcwp, acwp, "
+            "critical (boolean), milestone (boolean), summary (boolean), resource_names. "
+            "Key columns on projects: id, name, cost, baseline_cost, actual_cost, "
+            "start, finish, baseline_start, baseline_finish, bcws, bcwp, acwp. "
+            "Key columns on deviations: project_id, task_uid, deviation_type, severity, "
+            "metric_name, variance, variance_percent, description. "
+            "deviation_type values: schedule_slippage, cost_overrun, milestone_slippage, "
+            "duration_overrun, cpi_critical, spi_critical. "
+            "severity values: warning, critical. "
+            "Only SELECT queries are allowed."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "type": "string",
+                    "description": "A SQLite SELECT query to execute",
+                },
+                "explanation": {
+                    "type": "string",
+                    "description": "Brief explanation of what this query finds",
+                },
             },
-            "explanation": {
-                "type": "string",
-                "description": "Brief explanation of what this query finds",
-            },
+            "required": ["sql", "explanation"],
         },
-        "required": ["sql", "explanation"],
     },
 }
 
@@ -73,28 +78,34 @@ Format currency with $ and commas. Format percentages to 1 decimal place."""
 
 
 class NLQueryEngine:
-    def __init__(self, api_key: str, model: str, session: Session):
-        self.client = Anthropic(api_key=api_key)
+    def __init__(self, model: str, max_tokens: int, session: Session):
+        self.client = create_foundry_client()
         self.model = model
+        self.max_tokens = max_tokens
         self.session = session
 
     def ask(self, question: str) -> str:
-        messages = [{"role": "user", "content": question}]
-
         for _ in range(3):
-            response = self.client.messages.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
-                max_tokens=4096,
-                system=SYSTEM_PROMPT,
+                max_tokens=min(self.max_tokens, 2048),
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": question},
+                ],
                 tools=[SQL_QUERY_TOOL],
-                messages=messages,
+                tool_choice="auto",
             )
 
-            if response.stop_reason == "tool_use":
-                tool_use_block = next(
-                    b for b in response.content if b.type == "tool_use"
-                )
-                sql = tool_use_block.input.get("sql", "")
+            message = response.choices[0].message
+            tool_calls = message.tool_calls or []
+            if not tool_calls:
+                return message.content or ""
+
+            tool_outputs = []
+            for tool_call in tool_calls:
+                tool_args = json.loads(tool_call.function.arguments or "{}")
+                sql = tool_args.get("sql", "")
 
                 if not sql.strip().upper().startswith("SELECT"):
                     tool_result = "Error: Only SELECT queries are allowed."
@@ -111,17 +122,40 @@ class NLQueryEngine:
                     except Exception as e:
                         tool_result = f"Query error: {str(e)}"
 
-                messages.append({"role": "assistant", "content": response.content})
-                messages.append({
-                    "role": "user",
-                    "content": [{
-                        "type": "tool_result",
-                        "tool_use_id": tool_use_block.id,
+                tool_outputs.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
                         "content": tool_result,
-                    }],
-                })
-            else:
-                text_blocks = [b.text for b in response.content if hasattr(b, "text")]
-                return "\n".join(text_blocks)
+                    }
+                )
+
+            followup = self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=min(self.max_tokens, 2048),
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": question},
+                    {
+                        "role": "assistant",
+                        "content": message.content or "",
+                        "tool_calls": [
+                            {
+                                "id": tool_call.id,
+                                "type": "function",
+                                "function": {
+                                    "name": tool_call.function.name,
+                                    "arguments": tool_call.function.arguments,
+                                },
+                            }
+                            for tool_call in tool_calls
+                        ],
+                    },
+                    *tool_outputs,
+                ],
+                tools=[SQL_QUERY_TOOL],
+                tool_choice="none",
+            )
+            return followup.choices[0].message.content or ""
 
         return "I was unable to find a satisfactory answer after multiple queries. Please try rephrasing your question."

@@ -5,7 +5,7 @@ import { Send, Trash2, Sparkles, ChevronRight } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
 import { useChatStore } from '../stores/chatStore';
 import type { ChatMessage } from '../stores/chatStore';
-import { postApi } from '../api/client';
+import { ApiError, postApi } from '../api/client';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -309,8 +309,17 @@ function NLQuery() {
         });
         addMessage('assistant', response.answer);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'An unexpected error occurred';
+        let message = 'An unexpected error occurred';
+        if (err instanceof ApiError) {
+          try {
+            const parsed = JSON.parse(err.body) as { detail?: string };
+            message = parsed.detail || err.message;
+          } catch {
+            message = err.body || err.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
         addMessage(
           'assistant',
           `Error: Unable to process your query. ${message}`

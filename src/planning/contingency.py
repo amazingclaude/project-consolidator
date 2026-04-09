@@ -1,9 +1,8 @@
-"""Claude AI contingency analysis for fiscal year planning."""
+"""Azure AI Foundry contingency analysis for fiscal year planning."""
 
 import logging
-import os
-import yaml
-from anthropic import Anthropic
+
+from ..ai.foundry import create_foundry_client, get_foundry_settings, validate_foundry_settings
 from .solver import SolverResult
 
 logger = logging.getLogger(__name__)
@@ -25,9 +24,9 @@ For each major risk, recommend specific mitigation actions:
 
 ## Scenario Analysis
 Analyze these scenarios:
-1. A high-priority region loses 1 contractor for 2 months — what's the impact and how to mitigate?
-2. Winter is 20% worse than expected — which regions are affected and what's the shortfall?
-3. Planning permission delays add 1 month lead time to 3 regions — can the target still be met?
+1. A high-priority region loses 1 contractor for 2 months - what's the impact and how to mitigate?
+2. Winter is 20% worse than expected - which regions are affected and what's the shortfall?
+3. Planning permission delays add 1 month lead time to 3 regions - can the target still be met?
 
 ## Executive Summary
 A 3-4 sentence plain-English summary suitable for stakeholders, covering: will the target be met, what are the biggest risks, and what's the recommended action.
@@ -35,50 +34,45 @@ A 3-4 sentence plain-English summary suitable for stakeholders, covering: will t
 Format your response in clean markdown. Use tables where helpful. Be specific with numbers."""
 
 
+def _run_foundry_response(prompt: str, system_prompt: str, max_tokens: int) -> str:
+    settings = get_foundry_settings()
+    client = create_foundry_client()
+    response = client.responses.create(
+        model=settings["model"],
+        instructions=system_prompt,
+        input=prompt,
+        max_output_tokens=max_tokens,
+    )
+    return response.output_text or ""
+
+
+
 def run_contingency_analysis(solver_result: SolverResult, regions_data: list[dict]) -> str:
-    """Call Claude to analyze the solver output and generate contingency recommendations."""
+    """Call Azure AI Foundry to analyze the solver output and generate contingency recommendations."""
+    is_valid, error_message = validate_foundry_settings()
+    if not is_valid:
+        return f"**AI analysis unavailable:** {error_message}"
 
-    config_path = os.path.join(os.path.dirname(__file__), "..", "..", "config.yaml")
-    config = {}
-    if os.path.exists(config_path):
-        with open(config_path) as f:
-            config = yaml.safe_load(f) or {}
-
-    anthropic_config = config.get("anthropic", {})
-    api_key = anthropic_config.get("api_key") or os.environ.get("ANTHROPIC_API_KEY", "")
-    model = anthropic_config.get("model", "claude-sonnet-4-20250514")
-
-    if not api_key:
-        return "**AI analysis unavailable:** No Anthropic API key configured. Set ANTHROPIC_API_KEY environment variable or add it to config.yaml."
-
-    # Build the plan summary for Claude
     plan_summary = _build_plan_summary(solver_result, regions_data)
+    settings = get_foundry_settings()
 
-    client = Anthropic(api_key=api_key)
     try:
-        response = client.messages.create(
-            model=model,
-            max_tokens=4096,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": plan_summary}],
-        )
-        text_blocks = [b.text for b in response.content if hasattr(b, "text")]
-        return "\n".join(text_blocks)
+        return _run_foundry_response(plan_summary, SYSTEM_PROMPT, settings["max_tokens"])
     except Exception as e:
         logger.error(f"AI contingency analysis failed: {e}")
         return f"**AI analysis failed:** {str(e)}"
 
 
-def _build_plan_summary(result: SolverResult, regions_data: list[dict]) -> str:
-    """Format the solver result as a structured prompt for Claude."""
 
+def _build_plan_summary(result: SolverResult, regions_data: list[dict]) -> str:
+    """Format the solver result as a structured prompt for Azure AI Foundry."""
     lines = [
         "# Fiscal Year Plan Summary",
         "",
         f"**Target:** {result.target_sockets} sockets",
         f"**Achieved:** {result.total_sockets} sockets",
         f"**Shortfall:** {result.shortfall} sockets",
-        f"**Total CAPEX:** \u00a3{result.total_capex:,.0f}",
+        f"**Total CAPEX:** GBP {result.total_capex:,.0f}",
         "",
         "## Regional Capacity Utilization",
         "",
@@ -99,7 +93,6 @@ def _build_plan_summary(result: SolverResult, regions_data: list[dict]) -> str:
         "",
     ])
 
-    # Build monthly table
     region_codes = sorted(set(a.region_code for a in result.allocations))
     header = "| Region | " + " | ".join(f"M{m}" for m in range(1, 13)) + " | Total |"
     sep = "|--------|" + "|".join("------" for _ in range(12)) + "|-------|"
@@ -112,11 +105,10 @@ def _build_plan_summary(result: SolverResult, regions_data: list[dict]) -> str:
         total = sum(monthly.values())
         lines.append(f"| {code} | " + " | ".join(cells) + f" | {total} |")
 
-    # Monthly totals row
     month_totals = []
     for m in range(1, 13):
-        t = sum(a.planned_sockets for a in result.allocations if a.month == m)
-        month_totals.append(str(t))
+        total_for_month = sum(a.planned_sockets for a in result.allocations if a.month == m)
+        month_totals.append(str(total_for_month))
     lines.append(f"| **TOTAL** | " + " | ".join(month_totals) + f" | {result.total_sockets} |")
 
     lines.extend([
@@ -133,7 +125,7 @@ def _build_plan_summary(result: SolverResult, regions_data: list[dict]) -> str:
             source = a.contingency_source_region or "redistribution"
             lines.append(f"| {a.region_code} | M{a.month} | {a.planned_sockets} | {source} |")
     else:
-        lines.append("No contingency allocations needed — base plan meets target.")
+        lines.append("No contingency allocations needed - base plan meets target.")
 
     return "\n".join(lines)
 
@@ -150,9 +142,9 @@ You previously provided an analysis of a fiscal year deployment plan. The plan s
 """
 
 
+
 def build_plan_summary_from_db(plan) -> str:
     """Build a plan summary string from the FiscalPlan ORM object (no SolverResult needed)."""
-
     total_sockets = sum(a.planned_sockets for a in plan.allocations)
     total_capex = sum(a.capex for a in plan.allocations)
     shortfall = max(0, plan.target_sockets - total_sockets)
@@ -163,7 +155,7 @@ def build_plan_summary_from_db(plan) -> str:
         f"**Target:** {plan.target_sockets} sockets",
         f"**Achieved:** {total_sockets} sockets",
         f"**Shortfall:** {shortfall} sockets",
-        f"**Total CAPEX:** \u00a3{total_capex:,.0f}",
+        f"**Total CAPEX:** GBP {total_capex:,.0f}",
         "",
         "## Regional Capacity Utilization",
         "",
@@ -194,11 +186,12 @@ def build_plan_summary_from_db(plan) -> str:
 
     month_totals = []
     for m in range(1, 13):
-        t = sum(a.planned_sockets for a in plan.allocations if a.month == m)
-        month_totals.append(str(t))
+        total_for_month = sum(a.planned_sockets for a in plan.allocations if a.month == m)
+        month_totals.append(str(total_for_month))
     lines.append(f"| **TOTAL** | " + " | ".join(month_totals) + f" | {total_sockets} |")
 
     return "\n".join(lines)
+
 
 
 def run_followup_chat(
@@ -208,41 +201,25 @@ def run_followup_chat(
     history: list[dict],
 ) -> str:
     """Multi-turn conversation about a plan's contingency analysis."""
+    is_valid, error_message = validate_foundry_settings()
+    if not is_valid:
+        return f"**AI chat unavailable:** {error_message}"
 
-    config_path = os.path.join(os.path.dirname(__file__), "..", "..", "config.yaml")
-    config = {}
-    if os.path.exists(config_path):
-        with open(config_path) as f:
-            config = yaml.safe_load(f) or {}
+    transcript_lines = []
+    for msg in history[-10:]:
+        transcript_lines.append(f"{msg['role'].upper()}: {msg['content']}")
+    transcript_lines.append(f"USER: {question}")
 
-    anthropic_config = config.get("anthropic", {})
-    api_key = anthropic_config.get("api_key") or os.environ.get("ANTHROPIC_API_KEY", "")
-    model = anthropic_config.get("model", "claude-sonnet-4-20250514")
-
-    if not api_key:
-        return "**AI chat unavailable:** No Anthropic API key configured."
-
+    prompt = "\n\n".join(transcript_lines)
     system = FOLLOWUP_SYSTEM_PROMPT.format(
         plan_summary=plan_summary_text,
         original_analysis=original_analysis or "(No analysis generated yet)",
     )
 
-    # Build messages: history (capped at last 10) + new question
-    messages = []
-    for msg in history[-10:]:
-        messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": question})
-
-    client = Anthropic(api_key=api_key)
+    settings = get_foundry_settings()
     try:
-        response = client.messages.create(
-            model=model,
-            max_tokens=2048,
-            system=system,
-            messages=messages,
-        )
-        text_blocks = [b.text for b in response.content if hasattr(b, "text")]
-        return "\n".join(text_blocks)
+        return _run_foundry_response(prompt, system, min(settings["max_tokens"], 2048))
     except Exception as e:
         logger.error(f"AI followup chat failed: {e}")
         return f"**Error:** {str(e)}"
+
