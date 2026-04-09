@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Red Line Report - Portfolio Consolidator{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Red Line Report</h1>
+  <p>All flagged deviations from baseline across the portfolio</p>
+</div>
+<div class="filters">
+  <div class="filter-group"><label>Severity</label><select id="filter-severity"><option value="">All</option><option value="critical">Critical</option><option value="warning">Warning</option></select></div>
+  <div class="filter-group"><label>Project</label><select id="filter-project"><option value="">All</option></select></div>
+  <div class="filter-group"><label>Type</label><select id="filter-type"><option value="">All</option><option value="schedule_slippage">Schedule Slippage</option><option value="cost_overrun">Cost Overrun</option><option value="milestone_slippage">Milestone Slippage</option><option value="duration_overrun">Duration Overrun</option><option value="cpi_critical">CPI Critical</option><option value="spi_critical">SPI Critical</option></select></div>
+</div>
+<div id="deviation-cards" class="metrics-grid cols-3"></div>
+<div class="chart-row">
+  <div id="type-pie" class="chart-container"></div>
+  <div id="severity-pie" class="chart-container"></div>
+</div>
+<div class="section"><div id="project-bar" class="chart-container"></div></div>
+<div class="section"><h2>Deviation Details</h2><div id="deviation-table" class="table-container"></div></div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/red_line.js"></script>{% endblock %}

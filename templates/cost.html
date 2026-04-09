@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Cost Analysis - Portfolio Consolidator{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Cost Analysis</h1></div>
+<div id="cost-summary" class="metrics-grid cols-4"></div>
+<div class="section"><h2>Budget vs Actual Cost by Project</h2><div id="budget-actual-chart" class="chart-container"></div></div>
+<div class="section"><h2>Cost Variance by Project</h2><div id="cv-chart" class="chart-container"></div></div>
+<div class="section"><h2>CPI by Project</h2><div id="cpi-gauges" class="chart-row"></div></div>
+<div class="section"><h2>Budget vs Estimate at Completion</h2><div id="eac-chart" class="chart-container"></div></div>
+<div class="section"><h2>Detailed Cost Metrics</h2><div id="cost-table" class="table-container"></div></div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/cost.js"></script>{% endblock %}

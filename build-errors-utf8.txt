@@ -1,0 +1,135 @@
+﻿
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+src/api/deviations.ts(1,26): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/api/ingestion.ts(1,55): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/api/nlp.ts(1,29): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/api/planning.ts(1,55): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/api/planning.ts(39,18): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/planning.ts(49,18): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/planning.ts(59,18): error TS7006: Parameter 'planId' implicitly has an 'any' type.
+src/api/planning.ts(79,18): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/planning.ts(89,18): error TS7006: Parameter 'status' implicitly has an 'any' type.
+src/api/planning.ts(107,18): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/planning.ts(117,18): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/portfolio.ts(1,26): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/api/projects.ts(1,26): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/main.tsx(4,50): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/pages/CostAnalysis.tsx(114,45): error TS7006: Parameter 'project' implicitly has an 'any' type.
+src/pages/Overview.tsx(134,16): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/Overview.tsx(135,13): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/PlanForm.tsx(50,9): error TS6133: 'optimizeMutation' is declared but its value is never read.
+src/pages/PlanForm.tsx(80,35): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/pages/PlanForm.tsx(84,34): error TS7006: Parameter 'dno' implicitly has an 'any' type.
+src/pages/PlanForm.tsx(88,32): error TS2339: Property 'region_code' does not exist on type '{}'.
+src/pages/PlanForm.tsx(89,32): error TS2339: Property 'region_name' does not exist on type '{}'.
+src/pages/PlanForm.tsx(90,29): error TS2339: Property 'priority' does not exist on type '{}'.
+src/pages/PlanForm.tsx(91,33): error TS2339: Property 'target_sites' does not exist on type '{}'.
+src/pages/PlanForm.tsx(92,35): error TS2339: Property 'capex_per_site' does not exist on type '{}'.
+src/pages/PlanForm.tsx(93,32): error TS2339: Property 'contractors' does not exist on type '{}'.
+src/pages/PlanForm.tsx(94,45): error TS2339: Property 'team_size_per_contractor' does not exist on type '{}'.
+src/pages/PlanForm.tsx(95,49): error TS2339: Property 'max_sites_per_team_per_month' does not exist on type '{}'.
+src/pages/PlanForm.tsx(96,37): error TS2339: Property 'lead_time_months' does not exist on type '{}'.
+src/pages/PlanForm.tsx(97,36): error TS2339: Property 'build_time_days' does not exist on type '{}'.
+src/pages/PlanForm.tsx(102,59): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/pages/PlanForm.tsx(106,49): error TS7006: Parameter 'cr' implicitly has an 'any' type.
+src/pages/PlanForm.tsx(116,37): error TS7006: Parameter 'co' implicitly has an 'any' type.
+src/pages/PlanForm.tsx(126,41): error TS7006: Parameter 'ct' implicitly has an 'any' type.
+src/pages/PlanForm.tsx(152,34): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/pages/PlanForm.tsx(157,49): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/pages/PlanningDashboard.tsx(64,40): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/PlanningDashboard.tsx(65,45): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanningDashboard.tsx(65,50): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/PlanningDashboard.tsx(66,41): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanningDashboard.tsx(66,46): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/PlanningDashboard.tsx(123,24): error TS7006: Parameter 'plan' implicitly has an 'any' type.
+src/pages/PlanView.tsx(410,11): error TS6196: 'ActiveFilter' is declared but never used.
+src/pages/PlanView.tsx(416,7): error TS6133: 'HEALTH_OPTIONS' is declared but its value is never read.
+src/pages/PlanView.tsx(417,7): error TS6133: 'RANGE_OPTIONS' is declared but its value is never read.
+src/pages/PlanView_FY.tsx(172,16): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'number'.
+src/pages/PlanView_FY.tsx(175,14): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(176,14): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(176,19): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(179,57): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(182,32): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(185,49): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(185,52): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(186,55): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(186,58): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(197,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(198,16): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(198,21): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(200,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(201,16): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(201,21): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(217,25): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(298,53): error TS7006: Parameter 'cr' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(298,79): error TS7006: Parameter 'co' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(299,47): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(299,50): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(300,51): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(300,54): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(301,50): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(301,53): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(302,55): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(302,58): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(357,17): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/pages/PlanView_FY.tsx(359,38): error TS2345: Argument of type '(prev: string[]) => unknown[]' is not assignable to parameter of type 'SetStateAction<string[]>'.
+  Type '(prev: string[]) => unknown[]' is not assignable to type '(prevState: string[]) => string[]'.
+    Type 'unknown[]' is not assignable to type 'string[]'.
+      Type 'unknown' is not assignable to type 'string'.
+src/pages/PlanView_FY.tsx(360,35): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/pages/PlanView_FY.tsx(364,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/pages/PlanView_FY.tsx(369,17): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/PlanView_FY.tsx(492,69): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(494,45): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(497,58): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(497,63): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(498,64): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(498,69): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(502,29): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/pages/PlanView_FY.tsx(504,42): error TS2538: Type 'unknown' cannot be used as an index type.
+src/pages/PlanView_FY.tsx(526,75): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/pages/PlanView_FY.tsx(556,36): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(557,36): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(557,41): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(572,36): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(573,36): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(573,41): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(581,51): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(581,56): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(608,41): error TS7006: Parameter 'cr' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(609,40): error TS7006: Parameter 'co' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(610,43): error TS7006: Parameter 'ct' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(618,52): error TS7006: Parameter 'ca' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(641,43): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(644,56): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(644,61): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(653,68): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(681,40): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(682,40): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(682,45): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(690,64): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/PlanView_FY.tsx(690,69): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/pages/ProjectDeepDive.tsx(101,29): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/ProjectDeepDive.tsx(160,29): error TS7006: Parameter 'project' implicitly has an 'any' type.
+src/pages/RedLineReport.tsx(108,25): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/RedLineReport.tsx(119,25): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/pages/RedLineReport.tsx(403,30): error TS2322: Type '{ name: string; variance: unknown; }[]' is not assignable to type 'CostVarianceDataPoint[]'.
+  Type '{ name: string; variance: unknown; }' is not assignable to type 'CostVarianceDataPoint'.
+    Types of property 'variance' are incompatible.
+      Type 'unknown' is not assignable to type 'number'.
+src/pages/ScheduleAnalysis.tsx(200,38): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/ScheduleAnalysis.tsx(304,38): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/ScheduleAnalysis.tsx(304,43): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/ScheduleAnalysis.tsx(309,38): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/ScheduleAnalysis.tsx(309,43): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/ScheduleAnalysis.tsx(349,43): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/widgets/MilestoneTrackerWidget.tsx(88,42): error TS7006: Parameter 'ms' implicitly has an 'any' type.
+src/widgets/MilestoneTrackerWidget.tsx(113,27): error TS2339: Property 'slip_days' does not exist on type '{}'.
+src/widgets/ScheduleOverviewWidget.tsx(91,55): error TS7006: Parameter 'ms' implicitly has an 'any' type.
+src/widgets/TimeMetricsWidget.tsx(65,55): error TS7006: Parameter 'task' implicitly has an 'any' type.
+vite.config.ts(2,19): error TS2307: Cannot find module '@vitejs/plugin-react' or its corresponding type declarations.
+vite.config.ts(3,25): error TS2307: Cannot find module '@tailwindcss/vite' or its corresponding type declarations.
+

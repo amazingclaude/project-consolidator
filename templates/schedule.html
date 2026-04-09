@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Schedule Analysis - Portfolio Consolidator{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Schedule Analysis</h1></div>
+<div class="filters">
+  <div class="filter-group">
+    <label>Project</label>
+    <select id="project-select"><option value="">All Projects</option></select>
+  </div>
+</div>
+<div id="schedule-metrics" class="metrics-grid cols-4"></div>
+<div id="portfolio-charts" class="chart-row">
+  <div id="sv-chart" class="chart-container"></div>
+  <div id="milestone-chart" class="chart-container"></div>
+</div>
+<div id="gantt-section" class="section" style="display:none">
+  <h2>Gantt Chart (Baseline vs Current)</h2>
+  <div id="gantt-chart" class="chart-container"></div>
+</div>
+<div id="milestones-section" class="section" style="display:none">
+  <h2>Slipped Milestones</h2>
+  <div id="milestones-table" class="table-container"></div>
+</div>
+<div id="variance-section" class="section" style="display:none">
+  <h2>Task Schedule Variance</h2>
+  <div id="variance-chart" class="chart-container"></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/schedule.js"></script>{% endblock %}

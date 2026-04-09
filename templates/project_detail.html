@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Project Deep Dive - Portfolio Consolidator{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Project Deep Dive</h1></div>
+<div class="filters">
+  <div class="filter-group"><label>Select Project</label><select id="project-select"><option value="">-- Choose a project --</option></select></div>
+</div>
+<div id="project-info" style="display:none">
+  <div id="project-meta" class="metrics-grid cols-3" style="margin-bottom:1rem"></div>
+  <div class="tabs" id="detail-tabs">
+    <button class="tab-btn active" data-tab="tab-cost">Cost</button>
+    <button class="tab-btn" data-tab="tab-schedule">Schedule</button>
+    <button class="tab-btn" data-tab="tab-time">Time</button>
+    <button class="tab-btn" data-tab="tab-integrity">Integrity</button>
+    <button class="tab-btn" data-tab="tab-gantt">Gantt</button>
+    <button class="tab-btn" data-tab="tab-deviations">Deviations</button>
+  </div>
+  <div id="tab-cost" class="tab-content active"><div id="cost-metrics" class="metrics-grid cols-4"></div><div id="cost-extra" class="metrics-grid cols-2"></div><div class="section"><h2>Top Tasks by Cost</h2><div id="cost-tasks-table" class="table-container"></div></div></div>
+  <div id="tab-schedule" class="tab-content"><div id="sched-metrics" class="metrics-grid cols-4"></div><div class="section"><h2>Slipped Milestones</h2><div id="sched-milestones" class="table-container"></div></div></div>
+  <div id="tab-time" class="tab-content"><div id="time-metrics" class="metrics-grid cols-3"></div><div id="time-extra" class="metrics-grid cols-2"></div><div class="section"><h2>Tasks with Duration Overrun</h2><div id="time-overrun" class="table-container"></div></div></div>
+  <div id="tab-integrity" class="tab-content"><div id="integrity-indicators"></div><div id="integrity-stats" class="metrics-grid cols-3"></div><div class="section"><h2>Orphaned Tasks</h2><div id="integrity-orphaned" class="table-container"></div></div></div>
+  <div id="tab-gantt" class="tab-content"><div id="gantt-chart" class="chart-container"></div></div>
+  <div id="tab-deviations" class="tab-content"><div id="dev-table" class="table-container"></div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/project_detail.js"></script>{% endblock %}

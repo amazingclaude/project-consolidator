@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}NL Query - Portfolio Consolidator{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Natural Language Query</h1>
+  <p>Ask questions about your project portfolio in plain English</p>
+</div>
+<div class="chat-container">
+  <div id="chat-messages" class="chat-messages"></div>
+  <div class="chat-input-bar">
+    <input type="text" id="chat-input" placeholder="Ask a question about your projects..." autocomplete="off">
+    <button id="chat-send" class="btn btn-primary">Send</button>
+  </div>
+  <div class="examples-box">
+    <h3>Example questions</h3>
+    <ul id="examples-list">
+      <li>Which projects have the worst CPI?</li>
+      <li>Show me all critical milestones that have slipped more than 10 days.</li>
+      <li>What is the total cost overrun across the portfolio?</li>
+      <li>Which resources are assigned to the most tasks?</li>
+      <li>List projects with the most critical deviations.</li>
+      <li>What are the top 5 most expensive tasks across all projects?</li>
+      <li>Which projects are behind schedule based on SPI?</li>
+      <li>Summarize the overall health of the portfolio.</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/nl_query.js"></script>{% endblock %}

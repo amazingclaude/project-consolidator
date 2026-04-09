@@ -1,0 +1,25 @@
+# Project Portfolio Consolidator Configuration
+
+input_directories:
+  - /path/to/your/project/files
+
+database:
+  path: data/projects.db
+
+thresholds:
+  schedule_slippage_days: 5
+  cost_overrun_percent: 10
+  cpi_warning: 0.9
+  cpi_critical: 0.8
+  spi_warning: 0.9
+  spi_critical: 0.8
+  integrity_minimum: 0.7
+
+parsing:
+  batch_size: 20
+  use_cache: true
+
+anthropic:
+  api_key: ""
+  model: claude-sonnet-4-20250514
+  max_tokens: 4096

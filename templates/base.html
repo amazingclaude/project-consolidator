@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Portfolio Consolidator{% endblock %}</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <h2>Portfolio Consolidator</h2>
+    </div>
+    <div class="nav-section">
+      <span class="nav-label">Portfolio</span>
+      <a href="/" class="nav-link {% if active == 'overview' %}active{% endif %}">
+        <span class="nav-icon">&#x1F4CA;</span> Overview
+      </a>
+      <a href="/schedule" class="nav-link {% if active == 'schedule' %}active{% endif %}">
+        <span class="nav-icon">&#x1F4C5;</span> Schedule Analysis
+      </a>
+      <a href="/cost" class="nav-link {% if active == 'cost' %}active{% endif %}">
+        <span class="nav-icon">&#x1F4B0;</span> Cost Analysis
+      </a>
+      <a href="/red-line" class="nav-link {% if active == 'red_line' %}active{% endif %}">
+        <span class="nav-icon">&#x26A0;</span> Red Line Report
+      </a>
+    </div>
+    <div class="nav-section">
+      <span class="nav-label">Projects</span>
+      <a href="/projects" class="nav-link {% if active == 'project_detail' %}active{% endif %}">
+        <span class="nav-icon">&#x1F50D;</span> Project Deep Dive
+      </a>
+    </div>
+    <div class="nav-section">
+      <span class="nav-label">AI</span>
+      <a href="/nl-query" class="nav-link {% if active == 'nl_query' %}active{% endif %}">
+        <span class="nav-icon">&#x1F4AC;</span> NL Query
+      </a>
+    </div>
+    <div class="nav-section">
+      <span class="nav-label">Admin</span>
+      <a href="/ingestion" class="nav-link {% if active == 'ingestion' %}active{% endif %}">
+        <span class="nav-icon">&#x2B06;</span> Data Ingestion
+      </a>
+    </div>
+  </nav>
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/charts.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
