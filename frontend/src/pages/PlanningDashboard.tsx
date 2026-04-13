@@ -42,7 +42,7 @@ function PlanningDashboard() {
   if (isLoading) {
     return (
       <div className="p-6">
-        <PageHeader title="Fiscal Year Planning" subtitle="EV charging socket deployment planning" />
+        <PageHeader title="FY Planning" subtitle="Fiscal year connection planning and plan selection" />
         <LoadingState message="Loading plans..." />
       </div>
     );
@@ -51,7 +51,7 @@ function PlanningDashboard() {
   if (error) {
     return (
       <div className="p-6">
-        <PageHeader title="Fiscal Year Planning" subtitle="EV charging socket deployment planning" />
+        <PageHeader title="FY Planning" subtitle="Fiscal year connection planning and plan selection" />
         <ErrorState
           message={error instanceof Error ? error.message : 'Failed to load plans'}
           onRetry={() => refetch()}
@@ -68,7 +68,7 @@ function PlanningDashboard() {
   return (
     <div className="p-6 space-y-8">
       <div className="flex items-center justify-between">
-        <PageHeader title="Fiscal Year Planning" subtitle="EV charging socket deployment planning" />
+        <PageHeader title="FY Planning" subtitle="Fiscal year connection planning and plan selection" />
         <button
           onClick={() => navigate('/planning/new')}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"

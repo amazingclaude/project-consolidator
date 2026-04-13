@@ -25,12 +25,17 @@ interface NavSection {
 
 const navSections: NavSection[] = [
   {
+    title: 'Planning',
+    items: [
+      { to: '/', label: 'FY Planning', icon: <CalendarRange size={18} /> },
+    ],
+  },
+  {
     title: 'Portfolio',
     items: [
-      { to: '/', label: 'Overview', icon: <BarChart3 size={18} /> },
+      { to: '/portfolio', label: 'Portfolio', icon: <BarChart3 size={18} /> },
       { to: '/schedule', label: 'Schedule Analysis', icon: <Calendar size={18} /> },
       { to: '/cost', label: 'Cost Analysis', icon: <DollarSign size={18} /> },
-      { to: '/red-line', label: 'Red Line Report', icon: <AlertTriangle size={18} /> },
     ],
   },
   {
@@ -41,9 +46,9 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    title: 'Planning',
+    title: 'Optional',
     items: [
-      { to: '/planning', label: 'FY Planning', icon: <CalendarRange size={18} /> },
+      { to: '/red-line', label: 'Red Line Report', icon: <AlertTriangle size={18} /> },
     ],
   },
   {

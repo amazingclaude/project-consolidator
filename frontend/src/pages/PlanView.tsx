@@ -94,7 +94,7 @@ const ALL_COLUMNS: ColumnDef[] = [
   },
   {
     key: 'percent_complete',
-    label: '% Complete',
+    label: 'Stage Gate Completion',
     group: 'General',
     render: (r) => (
       <div className="flex items-center gap-2">
@@ -125,14 +125,14 @@ const ALL_COLUMNS: ColumnDef[] = [
   },
   {
     key: 'deviation_count',
-    label: 'Deviations',
+    label: 'Gate Deviations',
     group: 'General',
     render: (r) => r.deviation_count,
     sortValue: (r) => r.deviation_count,
   },
   {
     key: 'critical_issues',
-    label: 'Critical Issues',
+    label: 'Critical Gate Issues',
     group: 'General',
     render: (r) =>
       r.critical_issues > 0 ? (
@@ -155,14 +155,14 @@ const ALL_COLUMNS: ColumnDef[] = [
   },
   {
     key: 'actual_cost',
-    label: 'Actual Cost',
+    label: 'EAC',
     group: 'Cost',
-    render: (r) => formatCurrency(r.actual_cost),
-    sortValue: (r) => r.actual_cost,
+    render: (r) => formatCurrency(r.eac ?? r.actual_cost),
+    sortValue: (r) => r.eac ?? r.actual_cost,
   },
   {
     key: 'cost_variance',
-    label: 'Cost Variance',
+    label: 'Variance',
     group: 'Cost',
     render: (r) => (r.cost_variance !== null ? formatCurrency(r.cost_variance) : '-'),
     sortValue: (r) => r.cost_variance,
@@ -176,7 +176,7 @@ const ALL_COLUMNS: ColumnDef[] = [
   },
   {
     key: 'eac',
-    label: 'EAC',
+    label: 'Forecast Cost',
     group: 'Cost',
     render: (r) => (r.eac !== null ? formatCurrency(r.eac) : '-'),
     sortValue: (r) => r.eac,
@@ -435,7 +435,7 @@ function PlanView() {
   }, [setContext]);
 
   // Column group selector
-  const [activeGroup, setActiveGroup] = useState('All');
+  const [activeGroup, setActiveGroup] = useState('Cost');
   // Search
   const [search, setSearch] = useState('');
   // Sorting
@@ -550,7 +550,7 @@ function PlanView() {
   if (isLoading) {
     return (
       <div className="p-6">
-        <PageHeader title="Plan View" subtitle="Unified view of all project plans with metrics" />
+        <PageHeader title="Plan View" subtitle="Executive plan view focused on health, BAC, EAC, variance and deviations" />
         <LoadingState message="Loading plan data..." />
       </div>
     );
@@ -559,7 +559,7 @@ function PlanView() {
   if (error) {
     return (
       <div className="p-6">
-        <PageHeader title="Plan View" subtitle="Unified view of all project plans with metrics" />
+        <PageHeader title="Plan View" subtitle="Executive plan view focused on health, BAC, EAC, variance and deviations" />
         <ErrorState
           message={error instanceof Error ? error.message : 'Failed to load plan data'}
           onRetry={() => refetch()}
@@ -572,7 +572,7 @@ function PlanView() {
     <div className="p-6 space-y-5">
       <PageHeader
         title="Plan View"
-        subtitle={`Unified view of all project plans — ${data?.length ?? 0} plans loaded`}
+        subtitle={`Executive plan view focused on health, BAC, EAC, variance and deviations - ${data?.length ?? 0} plans loaded`}
       />
 
       {/* Toolbar: Column groups + Search + Filter toggle */}

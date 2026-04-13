@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
   Legend,
 } from 'recharts';
 import {
@@ -83,7 +82,7 @@ function PlanViewFY() {
   const [actualsEdited, setActualsEdited] = useState(false);
 
   // Heatmap view mode
-  const [heatmapView, setHeatmapView] = useState<'dno' | 'contract'>('dno');
+  const [heatmapView, setHeatmapView] = useState<'dno' | 'contract' | 'wp'>('dno');
 
   // Region filter state
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
@@ -188,33 +187,65 @@ function PlanViewFY() {
   const scaledTarget = Math.round(plan.target_sockets * (selectedRegions.length === 0 ? 1 : targetShare));
   const monthlyTarget = scaledTarget / 12;
 
-  // Build chart data with cumulative lines + monthly bars
-  let cumPlanned = 0;
-  let cumActual = 0;
-  const cumulativeData = MONTH_LABELS.map((label, i) => {
-    const monthNum = i + 1;
-    const monthPlanned = filteredAllocations
-      .filter((a) => a.month === monthNum)
-      .reduce((sum, a) => sum + a.planned_sockets, 0);
-    const monthActual = filteredAllocations
-      .filter((a) => a.month === monthNum)
-      .reduce((sum, a) => sum + a.actual_sockets, 0);
-    cumPlanned += monthPlanned;
-    cumActual += monthActual;
-    const targetCum = Math.round(monthlyTarget * monthNum);
-    return {
-      month: label,
-      target: targetCum,
-      planned: cumPlanned,
-      actual: cumActual > 0 ? cumActual : undefined,
-      monthlyPlanned: monthPlanned,
-      monthlyActual: monthActual > 0 ? monthActual : undefined,
-    };
-  });
-  const hasActuals = cumulativeData.some((d) => d.actual !== undefined);
-
   const regionNames: Record<string, string> = {};
   plan.regions.forEach((r) => { regionNames[r.region_code] = r.region_name; });
+
+  const allContracts = plan.hierarchy.flatMap((region) =>
+    region.councils.flatMap((council) =>
+      council.contracts.map((contract) => ({
+        ...contract,
+        regionName: region.name,
+        councilName: council.name,
+      }))
+    )
+  );
+
+  const contractById = Object.fromEntries(allContracts.map((contract) => [contract.id, contract]));
+  const totalForecastConnections = filteredAllocations.reduce(
+    (sum, allocation) => sum + (allocation.actual_sockets > 0 ? allocation.actual_sockets : allocation.planned_sockets),
+    0
+  );
+
+  const totalBomBudget = allContracts.reduce(
+    (sum, contract) => sum + contract.capex_bom * contract.target_sites,
+    0
+  );
+
+  const forecastRatio = scaledTarget > 0 ? Math.min(totalForecastConnections / scaledTarget, 1.25) : 0;
+  const forecastCapex = plan.total_capex * forecastRatio;
+  const forecastBom = totalBomBudget * forecastRatio;
+
+  const monthlyPerformanceData = MONTH_LABELS.map((label, index) => {
+    const month = index + 1;
+    const monthAllocations = filteredAllocations.filter((allocation) => allocation.month === month);
+    const monthContractAllocations = plan.contract_allocations.filter((allocation) => {
+      if (allocation.month !== month) return false;
+      if (selectedRegions.length === 0) return true;
+      const contract = contractById[allocation.contract_id];
+      return contract ? selectedRegions.includes(contract.dno_regions[0]) || selectedRegions.includes(contract.regionName) : true;
+    });
+
+    const plannedConnections = monthAllocations.reduce((sum, allocation) => sum + allocation.planned_sockets, 0);
+    const completedOrForecast = monthAllocations.reduce(
+      (sum, allocation) => sum + (allocation.actual_sockets > 0 ? allocation.actual_sockets : allocation.planned_sockets),
+      0
+    );
+    const capex = monthAllocations.reduce((sum, allocation) => sum + allocation.capex, 0);
+    const bom = monthContractAllocations.reduce((sum, allocation) => {
+      const contract = contractById[allocation.contract_id];
+      if (!contract) return sum;
+      return sum + allocation.planned_sites * contract.capex_bom;
+    }, 0);
+
+    return {
+      month: label,
+      targetConnections: Math.round(monthlyTarget),
+      plannedConnections,
+      completedOrForecast,
+      capex,
+      bom,
+    };
+  });
 
   return (
     <div className="p-6 space-y-8">
@@ -269,25 +300,25 @@ function PlanViewFY() {
       {hasAllocations && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            label="Target vs Achieved"
-            value={`${plan.total_achieved_sockets.toLocaleString()} / ${plan.target_sockets.toLocaleString()}`}
-            delta={`${achievedPct}%`}
-            deltaPositive={achievedPct >= 95}
+            label="Connections"
+            value={`${scaledTarget.toLocaleString()} target / ${totalForecastConnections.toLocaleString()} forecast`}
+            delta={`${achievedPct}% achieved`}
+            deltaPositive={totalForecastConnections >= scaledTarget}
             icon={<Target className="h-5 w-5" />}
           />
           <MetricCard
-            label="Total CAPEX"
-            value={`£${(plan.total_capex / 1_000_000).toFixed(2)}M`}
+            label="CAPEX Spend"
+            value={`£${(plan.total_capex / 1_000_000).toFixed(2)}M plan / £${(forecastCapex / 1_000_000).toFixed(2)}M forecast`}
             icon={<PoundSterling className="h-5 w-5" />}
           />
           <MetricCard
-            label="Peak Utilization"
-            value={`${peakUtil.toFixed(0)}%`}
+            label="BOM Consumption"
+            value={`£${(totalBomBudget / 1_000_000).toFixed(2)}M plan / £${(forecastBom / 1_000_000).toFixed(2)}M forecast`}
             icon={<TrendingUp className="h-5 w-5" />}
           />
           <MetricCard
-            label="Contingency Sockets"
-            value={contingencySockets.toLocaleString()}
+            label="Planning Cover"
+            value={`${contingencySockets.toLocaleString()} contingency / ${peakUtil.toFixed(0)}% peak util.`}
             icon={<Shield className="h-5 w-5" />}
           />
         </div>
@@ -337,7 +368,10 @@ function PlanViewFY() {
       {/* Cumulative progress chart with region filter and variance bars */}
       {hasAllocations && (
         <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Cumulative Socket Deployment</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">Connections by Month</h2>
+          <p className="mb-4 text-sm text-gray-500">
+            Target connections, completed or forecast connections, CAPEX and BOM are shown by month using the current plan payload.
+          </p>
 
           {/* Region filter pills */}
           <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -373,61 +407,52 @@ function PlanViewFY() {
 
           <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={cumulativeData}>
+              <ComposedChart data={monthlyPerformanceData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                 <YAxis
                   yAxisId="left"
                   tick={{ fontSize: 12 }}
-                  label={{ value: 'Cumulative', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#6b7280' } }}
+                  label={{ value: 'Connections', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#6b7280' } }}
                 />
                 <YAxis
                   yAxisId="right"
                   orientation="right"
                   tick={{ fontSize: 12 }}
-                  label={{ value: 'Monthly', angle: 90, position: 'insideRight', style: { fontSize: 11, fill: '#6b7280' } }}
+                  label={{ value: 'Cost (GBP)', angle: 90, position: 'insideRight', style: { fontSize: 11, fill: '#6b7280' } }}
                 />
                 <Tooltip />
                 <Legend />
-                <ReferenceLine yAxisId="left" y={scaledTarget} stroke="#ef4444" strokeDasharray="5 5" label="Year Target" />
-
-                {/* Monthly bars (right Y-axis) */}
-                <Bar yAxisId="right" dataKey="monthlyPlanned" name="Monthly Planned" fill="#93c5fd" opacity={0.6} barSize={20} />
-                {hasActuals && (
-                  <Bar yAxisId="right" dataKey="monthlyActual" name="Monthly Actual" fill="#6ee7b7" opacity={0.7} barSize={20} />
-                )}
-
-                {/* Cumulative lines (left Y-axis) */}
+                <Bar yAxisId="right" dataKey="capex" name="CAPEX" fill="#93c5fd" opacity={0.75} barSize={18} />
+                <Bar yAxisId="right" dataKey="bom" name="BOM" fill="#fbbf24" opacity={0.65} barSize={18} />
                 <Line
                   yAxisId="left"
                   type="monotone"
-                  dataKey="target"
-                  name="Target (Linear)"
+                  dataKey="targetConnections"
+                  name="Target Connections"
                   stroke="#ef4444"
                   strokeWidth={2}
-                  strokeDasharray="8 4"
-                  dot={false}
+                  strokeDasharray="6 3"
+                  dot={{ fill: '#ef4444', r: 3 }}
                 />
                 <Line
                   yAxisId="left"
                   type="monotone"
-                  dataKey="planned"
-                  name="Resource-Planned"
+                  dataKey="completedOrForecast"
+                  name="Completed / Forecast"
                   stroke="#3b82f6"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   dot={{ fill: '#3b82f6', r: 4 }}
                 />
-                {hasActuals && (
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="actual"
-                    name="Actually Built"
-                    stroke="#10b981"
-                    strokeWidth={2.5}
-                    dot={{ fill: '#10b981', r: 5 }}
-                  />
-                )}
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="plannedConnections"
+                  name="Planned Connections"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ fill: '#10b981', r: 3 }}
+                />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -438,7 +463,12 @@ function PlanViewFY() {
       {hasAllocations && (
         <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Monthly Allocation (Sockets)</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Monthly Allocation of Socket Connections</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Planned vs actual or forecast by month, with views by region, contract and work package.
+              </p>
+            </div>
             {actualsEdited && (
               <button
                 onClick={handleSaveActuals}
@@ -469,6 +499,14 @@ function PlanViewFY() {
               }`}
             >
               By Contract
+            </button>
+            <button
+              onClick={() => setHeatmapView('wp')}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                heatmapView === 'wp' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              By WP
             </button>
           </div>
 
@@ -561,7 +599,9 @@ function PlanViewFY() {
                           </td>
                         );
                       })}
-                      <td className="text-center py-2 px-3 text-gray-900">{plan.total_achieved_sockets}</td>
+                      <td className="text-center py-2 px-3 text-gray-900">
+                        {plan.allocations.reduce((sum, a) => sum + a.planned_sockets, 0)}
+                      </td>
                       <td />
                     </tr>
                     {/* Actuals totals row */}
@@ -637,11 +677,16 @@ function PlanViewFY() {
                       <tbody>
                         {contractIds.map((contractId) => {
                           const allocs = contractGroups[contractId];
-                          const monthMap: Record<number, number> = {};
+                          const monthMap: Record<number, { planned: number; actual: number }> = {};
                           allocs.forEach((a) => {
-                            monthMap[a.month] = (monthMap[a.month] ?? 0) + a.planned_sockets;
+                            const current = monthMap[a.month] ?? { planned: 0, actual: 0 };
+                            monthMap[a.month] = {
+                              planned: current.planned + a.planned_sockets,
+                              actual: current.actual + ((a.actual_sockets ?? 0) > 0 ? (a.actual_sockets ?? 0) : a.planned_sockets),
+                            };
                           });
                           const total = allocs.reduce((sum, a) => sum + a.planned_sockets, 0);
+                          const totalActual = allocs.reduce((sum, a) => sum + (a.actual_sockets ?? 0), 0);
 
                           return (
                             <tr key={contractId} className="border-b border-gray-100 hover:bg-gray-50">
@@ -649,18 +694,24 @@ function PlanViewFY() {
                                 {contractNames[contractId] || `Contract #${contractId}`}
                               </td>
                               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
-                                const sockets = monthMap[m] ?? 0;
+                                const sockets = monthMap[m]?.planned ?? 0;
+                                const actual = monthMap[m]?.actual ?? 0;
                                 const isContingency = allocs.some((a) => a.month === m && a.is_contingency);
                                 return (
                                   <td key={m} className="text-center py-1 px-1">
                                     {sockets > 0 ? (
-                                      <span
-                                        className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${
-                                          isContingency ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
-                                        }`}
-                                      >
-                                        {sockets}
-                                      </span>
+                                      <div className="flex flex-col items-center gap-0.5">
+                                        <span
+                                          className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${
+                                            isContingency ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                                          }`}
+                                        >
+                                          {sockets}
+                                        </span>
+                                        <span className="text-[10px] text-green-700">
+                                          {actual > 0 ? actual : 'f/c'}
+                                        </span>
+                                      </div>
                                     ) : (
                                       <span className="text-gray-300">-</span>
                                     )}
@@ -668,7 +719,10 @@ function PlanViewFY() {
                                 );
                               })}
                               <td className="text-center py-2 px-3">
-                                <span className="font-semibold text-gray-900">{total}</span>
+                                <div className="flex flex-col items-center">
+                                  <span className="font-semibold text-gray-900">{total}</span>
+                                  {totalActual > 0 && <span className="text-xs text-green-700">{totalActual}</span>}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -690,6 +744,22 @@ function PlanViewFY() {
                             {plan.contract_allocations.reduce((sum, a) => sum + a.planned_sockets, 0)}
                           </td>
                         </tr>
+                        <tr className="bg-green-50 font-semibold">
+                          <td className="py-2 px-3 text-green-800">Actual / Forecast</td>
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                            const monthTotal = plan.contract_allocations
+                              .filter((a) => a.month === m)
+                              .reduce((sum, a) => sum + ((a.actual_sockets ?? 0) > 0 ? (a.actual_sockets ?? 0) : a.planned_sockets), 0);
+                            return (
+                              <td key={m} className="text-center py-2 px-2 text-green-800">
+                                {monthTotal || '-'}
+                              </td>
+                            );
+                          })}
+                          <td className="text-center py-2 px-3 text-green-800">
+                            {plan.contract_allocations.reduce((sum, a) => sum + ((a.actual_sockets ?? 0) > 0 ? (a.actual_sockets ?? 0) : a.planned_sockets), 0)}
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
@@ -697,6 +767,88 @@ function PlanViewFY() {
               })() : (
                 <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
                   <p className="text-sm text-gray-500">No contract hierarchy configured for this plan.</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {heatmapView === 'wp' && (
+            <>
+              {plan.hierarchy.length > 0 ? (() => {
+                const wpGroups = allContracts.reduce<Record<string, typeof plan.contract_allocations>>((acc, contract) => {
+                  if (!acc[contract.councilName]) {
+                    acc[contract.councilName] = [];
+                  }
+                  const allocations = plan.contract_allocations.filter((allocation) => allocation.contract_id === contract.id);
+                  acc[contract.councilName].push(...allocations);
+                  return acc;
+                }, {});
+
+                const wpNames = Object.keys(wpGroups).sort((a, b) => a.localeCompare(b));
+
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-3 font-medium text-gray-700">Work Package</th>
+                          {MONTH_LABELS.map((m) => (
+                            <th key={m} className="text-center py-2 px-2 font-medium text-gray-700 w-16">{m}</th>
+                          ))}
+                          <th className="text-center py-2 px-3 font-medium text-gray-700">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {wpNames.map((wpName) => {
+                          const allocs = wpGroups[wpName];
+                          const total = allocs.reduce((sum, allocation) => sum + allocation.planned_sockets, 0);
+                          const totalActual = allocs.reduce(
+                            (sum, allocation) => sum + ((allocation.actual_sockets ?? 0) > 0 ? (allocation.actual_sockets ?? 0) : allocation.planned_sockets),
+                            0
+                          );
+
+                          return (
+                            <tr key={wpName} className="border-b border-gray-100 hover:bg-gray-50">
+                              <td className="py-2 px-3 font-medium text-gray-900 whitespace-nowrap">{wpName}</td>
+                              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                                const monthPlanned = allocs
+                                  .filter((allocation) => allocation.month === m)
+                                  .reduce((sum, allocation) => sum + allocation.planned_sockets, 0);
+                                const monthForecast = allocs
+                                  .filter((allocation) => allocation.month === m)
+                                  .reduce((sum, allocation) => sum + ((allocation.actual_sockets ?? 0) > 0 ? (allocation.actual_sockets ?? 0) : allocation.planned_sockets), 0);
+
+                                return (
+                                  <td key={m} className="text-center py-1 px-1">
+                                    {monthPlanned > 0 ? (
+                                      <div className="flex flex-col items-center gap-0.5">
+                                        <span className="inline-block rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-800">
+                                          {monthPlanned}
+                                        </span>
+                                        <span className="text-[10px] text-green-700">{monthForecast}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-300">-</span>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                              <td className="text-center py-2 px-3">
+                                <div className="flex flex-col items-center">
+                                  <span className="font-semibold text-gray-900">{total}</span>
+                                  <span className="text-xs text-green-700">{totalActual}</span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })() : (
+                <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
+                  <p className="text-sm text-gray-500">No work-package hierarchy is available for this plan.</p>
                 </div>
               )}
             </>

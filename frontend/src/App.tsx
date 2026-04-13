@@ -42,7 +42,8 @@ export default function App() {
       >
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Overview />} />
+            <Route path="/" element={<PlanningDashboard />} />
+            <Route path="/portfolio" element={<Overview />} />
             <Route path="/schedule" element={<ScheduleAnalysis />} />
             <Route path="/cost" element={<CostAnalysis />} />
             <Route path="/red-line" element={<RedLineReport />} />

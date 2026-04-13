@@ -2,12 +2,14 @@ import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Building,
-  ListChecks,
   AlertTriangle,
   AlertOctagon,
   DollarSign,
   TrendingDown,
   Wallet,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldX,
 } from 'lucide-react';
 
 import { usePortfolioSummary, usePortfolioHealth } from '../api/portfolio';
@@ -52,12 +54,12 @@ const healthColumns: Column<ProjectHealth>[] = [
   },
   {
     key: 'budget',
-    label: 'Budget',
+    label: 'BAC',
     render: (value) => formatCurrency(value as number),
   },
   {
     key: 'actual_cost',
-    label: 'Actual Cost',
+    label: 'EAC',
     render: (value) => formatCurrency(value as number),
   },
   {
@@ -80,7 +82,7 @@ const healthColumns: Column<ProjectHealth>[] = [
   },
   {
     key: 'critical_issues',
-    label: 'Critical Issues',
+    label: 'Gate Deviations',
     render: (value) => {
       const count = value as number;
       if (count === 0) {
@@ -150,12 +152,46 @@ function Overview() {
     return (costVariance / summary.total_baseline_cost) * 100;
   }, [summary, costVariance]);
 
+  const portfolioHealth = useMemo(() => {
+    if (!healthData) {
+      return { healthy: 0, warning: 0, critical: 0 };
+    }
+
+    return healthData.reduce(
+      (acc, project) => {
+        const budget = project.budget ?? 0;
+        const forecast = project.actual_cost ?? 0;
+        const overrunPct = budget > 0 ? ((forecast - budget) / budget) * 100 : 0;
+
+        if (overrunPct > 25 || project.critical_issues >= 2) {
+          acc.critical += 1;
+        } else if (overrunPct > 10 || project.critical_issues >= 1) {
+          acc.warning += 1;
+        } else {
+          acc.healthy += 1;
+        }
+
+        return acc;
+      },
+      { healthy: 0, warning: 0, critical: 0 }
+    );
+  }, [healthData]);
+
+  const healthSummary = useMemo(() => {
+    const total = portfolioHealth.healthy + portfolioHealth.warning + portfolioHealth.critical;
+
+    if (total === 0) return 'No data';
+    if (portfolioHealth.critical > 0) return `${portfolioHealth.critical} critical`;
+    if (portfolioHealth.warning > 0) return `${portfolioHealth.warning} warning`;
+    return 'On track';
+  }, [portfolioHealth]);
+
   if (isLoading) {
     return (
       <div className="p-6">
         <PageHeader
-          title="Portfolio Overview"
-          subtitle="Executive summary of all projects"
+          title="Portfolio"
+          subtitle="Executive summary of projects, forecast cost and delivery health"
         />
         <LoadingState message="Loading portfolio data..." />
       </div>
@@ -166,8 +202,8 @@ function Overview() {
     return (
       <div className="p-6">
         <PageHeader
-          title="Portfolio Overview"
-          subtitle="Executive summary of all projects"
+          title="Portfolio"
+          subtitle="Executive summary of projects, forecast cost and delivery health"
         />
         <ErrorState
           message={error instanceof Error ? error.message : 'Failed to load portfolio data'}
@@ -191,29 +227,37 @@ function Overview() {
   return (
     <div className="p-6 space-y-8">
       <PageHeader
-        title="Portfolio Overview"
-        subtitle="Executive summary of all projects"
+        title="Portfolio"
+        subtitle="Executive summary of projects, forecast cost and delivery health"
       />
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          label="Total Projects"
+          label="Projects"
           value={summary?.total_projects ?? 0}
           icon={<Building className="h-5 w-5" />}
         />
         <MetricCard
-          label="Total Tasks"
-          value={summary?.total_tasks ?? 0}
-          icon={<ListChecks className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Total Deviations"
+          label="Stage Gate Deviations"
           value={summary?.total_deviations ?? 0}
           icon={<AlertTriangle className="h-5 w-5" />}
         />
         <MetricCard
-          label="Critical Issues"
+          label="Portfolio Health"
+          value={healthSummary}
+          icon={
+            portfolioHealth.critical > 0 ? (
+              <ShieldX className="h-5 w-5" />
+            ) : portfolioHealth.warning > 0 ? (
+              <ShieldAlert className="h-5 w-5" />
+            ) : (
+              <ShieldCheck className="h-5 w-5" />
+            )
+          }
+        />
+        <MetricCard
+          label="Critical Deviations"
           value={summary?.critical_deviations ?? 0}
           icon={<AlertOctagon className="h-5 w-5" />}
           className="border-red-200 bg-red-50/30"
@@ -228,12 +272,12 @@ function Overview() {
           icon={<Wallet className="h-5 w-5" />}
         />
         <MetricCard
-          label="Total Actual Cost"
+          label="Forecast Cost"
           value={formatCurrency(summary?.total_actual_cost ?? 0)}
           icon={<DollarSign className="h-5 w-5" />}
         />
         <MetricCard
-          label="Cost Variance"
+          label="Variance"
           value={formatCurrency(costVariance)}
           delta={`${costVariancePct >= 0 ? '+' : ''}${costVariancePct.toFixed(1)}%`}
           deltaPositive={costVariance >= 0}
@@ -248,7 +292,7 @@ function Overview() {
             Project Performance Matrix
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            CPI vs SPI scatter plot — click a point to view project details
+            CPI vs SPI scatter plot. This remains as-is for portfolio performance comparison.
           </p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -263,7 +307,7 @@ function Overview() {
             Project Health Overview
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            All projects sorted by critical issues — click a row to drill down
+            EAC is shown in place of actual cost. Health bands use deviations and forecast-vs-budget thresholds as a frontend proxy.
           </p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
