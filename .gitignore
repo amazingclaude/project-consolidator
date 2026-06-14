@@ -1,6 +1,51 @@
+# Local configuration and secrets
 .env
-.env.local
 .env.*
 !.env.example
+
+# Python bytecode and tool caches
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local Python environments
+.venv/
+venv/
+env/
+antenv/
+
+# Runtime files
+*.log
+*.pid
+*.sqlite
+*.sqlite3
+data/*.db-journal
+data/*.db-shm
+data/*.db-wal
+
+# Frontend dependencies and generated output
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# Build and diagnostic output
+build-errors*.txt
+
+# Editors and operating systems
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+Desktop.ini

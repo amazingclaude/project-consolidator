@@ -430,11 +430,63 @@ function PlanForm() {
 
       {/* Hierarchy tab */}
       {activeTab === 'hierarchy' && (
-        <HierarchyEditor
-          hierarchy={hierarchy}
-          onChange={setHierarchy}
-          dnoRegions={dnoRegions || []}
-        />
+        <div className="space-y-4">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-gray-900">Load from Template</h3>
+              <p className="text-xs text-gray-500">Upload a hierarchy CSV to populate the contract hierarchy automatically.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href="/api/planning/templates/sample"
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                download
+              >
+                Download sample
+              </a>
+              <input
+                id="template-file"
+                type="file"
+                accept=".csv"
+                onChange={async (e) => {
+                  const f = e.target.files ? e.target.files[0] : null;
+                  if (!f) return;
+                  const fd = new FormData();
+                  fd.append('file', f);
+                  try {
+                    const resp = await fetch('/api/planning/templates/parse', { method: 'POST', body: fd });
+                    if (!resp.ok) {
+                      const txt = await resp.text();
+                      alert('Failed to parse template: ' + txt);
+                      return;
+                    }
+                    const data = await resp.json();
+                    if (data && data.custom_regions) {
+                      setHierarchy(data.custom_regions);
+                      setActiveTab('hierarchy');
+                      // If editing an existing plan, persist immediately
+                      if (isEdit && planIdNum) {
+                        await putApi(`/api/planning/plans/${planIdNum}/hierarchy`, { custom_regions: data.custom_regions });
+                      }
+                    }
+                  } catch (err) {
+                    alert('Error uploading template: ' + (err instanceof Error ? err.message : String(err)));
+                  }
+                }}
+                className="hidden"
+              />
+              <label htmlFor="template-file" className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer">
+                Upload & Load
+              </label>
+            </div>
+          </div>
+
+          <HierarchyEditor
+            hierarchy={hierarchy}
+            onChange={setHierarchy}
+            dnoRegions={dnoRegions || []}
+          />
+        </div>
       )}
 
       {/* DNO Regions tab (existing region cards) */}

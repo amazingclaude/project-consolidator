@@ -1,0 +1,7 @@
+custom_region_name,council_name,contract_name,work_package_name,target_sites,capex_bom,capex_dno,capex_survey,capex_council,opex_per_site,revenue_per_site,dno_region,contractors,team_size_per_contractor,max_sites_per_team_per_month,lead_time_months,build_time_days,priority,target_sockets_jan,target_sockets_feb,target_sockets_mar,target_sockets_apr,target_sockets_may,target_sockets_jun,target_sockets_jul,target_sockets_aug,target_sockets_sep,target_sockets_oct,target_sockets_nov,target_sockets_dec
+London North,Camden,Camden EV Phase 1,,10,5000,1200,800,0,0,0,UKPN-EPN,2,4,2,2,30,7
+London North,Camden,Camden EV Phase 1,Phase 1A WP,5,5000,1200,800,0,0,0,UKPN-EPN,1,4,2,2,30,8
+London North,Camden,Camden EV Phase 1,Phase 1B WP,5,5000,1200,800,0,0,0,UKPN-EPN,1,4,2,3,30,6
+London South,Lambeth,Lambeth Central,,8,4800,1100,750,0,0,0,UKPN-SPN,2,4,2,1,30,5
+London South,Lambeth,Lambeth Central,Central WP1,4,4800,1100,750,0,0,0,UKPN-SPN,1,4,2,1,30,7
+London South,Lambeth,Lambeth Central,Central WP2,4,4800,1100,750,0,0,0,UKPN-SPN,1,4,2,2,30,5

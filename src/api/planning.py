@@ -1,6 +1,9 @@
 import json
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
+import os
+import csv
 from sqlalchemy.orm import Session
 from ..database.db import get_db
 from ..database.models import (
@@ -33,10 +36,161 @@ from .schemas import (
 
 router = APIRouter(prefix="/api/planning", tags=["planning"])
 
+# Paths for storing templates
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+TEMPLATES_DIR = os.path.join(PROJECT_ROOT, 'data', 'hierarchy-templates')
+os.makedirs(TEMPLATES_DIR, exist_ok=True)
+
 
 @router.get("/regions", response_model=list[DNORegion])
 def list_regions():
     return [DNORegion(**r) for r in DNO_REGIONS]
+
+
+@router.get('/templates/sample')
+def get_template_sample():
+    sample_path = os.path.join(PROJECT_ROOT, 'data', 'hierarchy-template-sample.csv')
+    if not os.path.exists(sample_path):
+        raise HTTPException(status_code=404, detail='Sample template not found')
+    return FileResponse(sample_path, media_type='text/csv', filename='hierarchy-template-sample.csv')
+
+
+@router.get('/templates')
+def list_templates():
+    files = []
+    if os.path.isdir(TEMPLATES_DIR):
+        for f in os.listdir(TEMPLATES_DIR):
+            if f.lower().endswith('.csv'):
+                files.append(f)
+    return files
+
+
+@router.post('/templates/upload')
+async def upload_template(file: UploadFile = File(...)):
+    dest = os.path.join(TEMPLATES_DIR, os.path.basename(file.filename))
+    contents = await file.read()
+    with open(dest, 'wb') as fh:
+        fh.write(contents)
+    return {'filename': os.path.basename(dest)}
+
+
+@router.post('/templates/parse')
+async def parse_template(file: UploadFile = File(...)):
+    """Parse uploaded CSV template into hierarchy structure used by the frontend."""
+    content = await file.read()
+    try:
+        text = content.decode('utf-8-sig')
+    except Exception:
+        text = content.decode('utf-8', errors='ignore')
+    reader = csv.DictReader(text.splitlines())
+    # Expected columns documented in UI; we'll be permissive and pull known names
+    regions_map: dict = {}
+    for row in reader:
+        region_name = (row.get('custom_region_name') or row.get('region') or 'Default Region').strip()
+        council_name = (row.get('council_name') or row.get('council') or 'Default Council').strip()
+        contract_name = (row.get('contract_name') or row.get('contract') or 'Contract').strip()
+
+        # dno regions may be comma or semicolon separated
+        dno_raw = row.get('dno_region') or row.get('dno_regions') or ''
+        dno_regions = [d.strip() for d in (dno_raw.replace(';', ',').split(',')) if d.strip()]
+
+        def parse_int(key, default=0):
+            v = row.get(key) or ''
+            try:
+                return int(float(v))
+            except Exception:
+                return default
+
+        def parse_float(key, default=0.0):
+            v = row.get(key) or ''
+            try:
+                return float(v)
+            except Exception:
+                return default
+
+        contractors = parse_int('contractors', 1)
+        team_size = parse_int('team_size_per_contractor', 4)
+        max_sites = parse_int('max_sites_per_team_per_month', 2)
+        lead_time = parse_int('lead_time_months', 2)
+        build_days = parse_int('build_time_days', 30)
+        target_sites = parse_int('target_sites', 0)
+        priority = parse_int('priority', 5)
+
+        capex_bom = parse_float('capex_bom', 0.0)
+        capex_dno = parse_float('capex_dno', 0.0)
+        capex_survey = parse_float('capex_survey', 0.0)
+        capex_council = parse_float('capex_council', 0.0)
+        opex = parse_float('opex_per_site', 0.0)
+        revenue = parse_float('revenue_per_site', 0.0)
+
+        # create structures
+        r = regions_map.get(region_name)
+        if not r:
+            r = {'name': region_name, 'code': ''.join(c if c.isalnum() else '_' for c in region_name.upper()), 'description': None, 'default_capex_bom': 0.0, 'default_capex_dno': 0.0, 'default_capex_survey': 0.0, 'default_capex_council': 0.0, 'default_opex': 0.0, 'default_revenue_per_site': 0.0, 'councils': {}}
+            regions_map[region_name] = r
+
+        councils = r['councils']
+        co = councils.get(council_name)
+        if not co:
+            co_code = ''.join(c if c.isalnum() else '_' for c in council_name.upper())
+            co = {'name': council_name, 'code': co_code, 'contact_info': None, 'default_capex_bom': None, 'default_capex_dno': None, 'default_capex_survey': None, 'default_capex_council': None, 'default_opex': None, 'default_revenue_per_site': None, 'contracts': []}
+            councils[council_name] = co
+
+        contract = {
+            'name': contract_name,
+            'reference': None,
+            'status': 'active',
+            'dno_regions': dno_regions,
+            'contractors': contractors,
+            'team_size_per_contractor': team_size,
+            'max_sites_per_team_per_month': max_sites,
+            'lead_time_months': lead_time,
+            'build_time_days': build_days,
+            'target_sites': target_sites,
+            'priority': priority,
+            'capex_bom': capex_bom,
+            'capex_dno': capex_dno,
+            'capex_survey': capex_survey,
+            'capex_council': capex_council,
+            'opex_per_site': opex,
+            'revenue_per_site': revenue,
+            'redundancy_percent': 0.0,
+            'contingency_percent': 10.0,
+        }
+
+        co['contracts'].append(contract)
+
+    # build final list
+    custom_regions = []
+    for rn, rv in regions_map.items():
+        councils_out = []
+        for cn, cv in rv['councils'].items():
+            councils_out.append({
+                'name': cv['name'],
+                'code': cv['code'],
+                'contact_info': cv.get('contact_info'),
+                'default_capex_bom': cv.get('default_capex_bom'),
+                'default_capex_dno': cv.get('default_capex_dno'),
+                'default_capex_survey': cv.get('default_capex_survey'),
+                'default_capex_council': cv.get('default_capex_council'),
+                'default_opex': cv.get('default_opex'),
+                'default_revenue_per_site': cv.get('default_revenue_per_site'),
+                'contracts': cv['contracts'],
+            })
+        custom_regions.append({
+            'name': rv['name'],
+            'code': rv['code'],
+            'description': rv.get('description'),
+            'default_capex_bom': rv.get('default_capex_bom', 0.0),
+            'default_capex_dno': rv.get('default_capex_dno', 0.0),
+            'default_capex_survey': rv.get('default_capex_survey', 0.0),
+            'default_capex_council': rv.get('default_capex_council', 0.0),
+            'default_opex': rv.get('default_opex', 0.0),
+            'default_revenue_per_site': rv.get('default_revenue_per_site', 0.0),
+            'councils': councils_out,
+        })
+
+    return {'custom_regions': custom_regions}
 
 
 @router.get("/plans", response_model=list[FiscalPlanSummary])
